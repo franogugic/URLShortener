@@ -51,15 +51,20 @@ public class UserService : IUserService
     public async Task<LoginUserResponseDTO> LoginUser(LoginUserRequestDTO request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetUserByUsername(request.Username, cancellationToken);
-
         if (user == null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
             _logger.LogWarning("Failed login attempt for username {Username}", request.Username);
             throw new InvalidCredentialsException();
         }
-
+        
         _logger.LogInformation("User {Username} logged in successfully", request.Username);
 
         return _mapper.Map<LoginUserResponseDTO>(user);
+    }
+
+    public async Task<User> GetUserById(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.GetUserById(userId, cancellationToken);
+        return _mapper.Map<User>(user);
     }
 }

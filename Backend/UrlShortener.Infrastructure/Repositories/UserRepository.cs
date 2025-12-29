@@ -19,6 +19,13 @@ public class UserRepository : IUserRepository
 
         return await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
     }
+    
+    public async Task<User?> GetUserById(Guid userId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+    }
+    
     public async Task CreateAsync(User user, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -27,4 +34,6 @@ public class UserRepository : IUserRepository
         cancellationToken.ThrowIfCancellationRequested();
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+    
+    
 }

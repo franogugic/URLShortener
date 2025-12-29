@@ -5,7 +5,9 @@ namespace UrlShortener.Application.Interfaces;
 
 public interface IUserService
 {
-    public Task<RegisterUserResponseDTO> RegisterUser(RegisterUserRequestDTO request, CancellationToken cancellationToken);
+    Task<RegisterUserResponseDTO> RegisterUser(RegisterUserRequestDTO request, CancellationToken cancellationToken);
     
-    public Task<LoginUserResponseDTO> LoginUser(LoginUserRequestDTO request, CancellationToken cancellationToken);
+    Task<LoginUserResponseDTO> LoginUser(LoginUserRequestDTO request, CancellationToken cancellationToken);
+    
+    Task<User?> GetUserById(Guid id, CancellationToken cancellationToken);
 }

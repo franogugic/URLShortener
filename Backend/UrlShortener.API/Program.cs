@@ -2,6 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using UrlShortener.API.Middlewares;
 using UrlShortener.Application.Interfaces;
 using UrlShortener.Application.Services;
+using UrlShortener.Application.URLs.Interfaces;
+using UrlShortener.Application.URLs.Mapping;
+using UrlShortener.Application.URLs.Services;
 using UrlShortener.Application.Users.Mapping;
 using UrlShortener.Infrastructure.Db;
 using UrlShortener.Infrastructure.Repositories;
@@ -34,6 +37,10 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 
+builder.Services.AddScoped<IUrlService, UrlService>();
+builder.Services.AddScoped<IUrlRepository, UrlRepository>();
+
+
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
 builder.Services.AddCors(options =>
@@ -53,7 +60,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddControllers();
 
-builder.Services.AddAutoMapper(typeof(UserProfile).Assembly);
+builder.Services.AddAutoMapper(typeof(UserProfile).Assembly, typeof(UrlProfile).Assembly);
 
 var app = builder.Build();
 
