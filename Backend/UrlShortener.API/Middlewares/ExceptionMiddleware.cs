@@ -35,6 +35,10 @@ public class ExceptionMiddleware
                     httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
                     break;
                 
+                case InvalidUrlCreateException:
+                    httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    break;
+                
                 case InvalidCredentialsException:
                     httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     break;

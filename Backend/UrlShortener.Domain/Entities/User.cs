@@ -4,10 +4,13 @@ namespace UrlShortener.Domain.Entities;
 
 public class User
 {
-    public Guid Id { get; set; }
-    public string Username { get; set; }
-    public string PasswordHash { get; set; }
-    public DateTime DateCreated { get; set; }
+    public Guid Id { get; private set; }
+    public string Username { get; private set; }
+    public string PasswordHash { get; private set; }
+    public DateTime DateCreated { get; private set; }
+    
+    public ICollection<Url>  Urls { get; private set; } = new List<Url>();
+    
     
     private User() {}
 
