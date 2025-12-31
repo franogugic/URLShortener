@@ -44,7 +44,8 @@ public class UrlController : ControllerBase
     [HttpGet("getAllUrlsByUserId")]
     public async Task<IActionResult> GetAllUrlsByUser(CancellationToken cancellationToken)
     {
-        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value); 
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized();
         
         var urls = await _urlService.GetAllUrlsByUser(userId, cancellationToken);
         return Ok(urls);
@@ -54,18 +55,20 @@ public class UrlController : ControllerBase
     [HttpGet("getUrlById/{id}")]
     public async Task<IActionResult> GetUrlById(Guid id, CancellationToken cancellationToken)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized();
         
-        var url = await _urlService.GetUrlById(id, currentUserId ,cancellationToken);
+        var url = await _urlService.GetUrlById(id, userId ,cancellationToken);
         return Ok(url);
     }
 
     [Authorize]
-    [HttpGet("delete/{id}")]
+    [HttpDelete("delete/{id}")]
     public async Task<IActionResult> DeleteUrl(Guid id, CancellationToken cancellationToken)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-        await _urlService.DeleteAsync(id, currentUserId, cancellationToken);
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized();
+        await _urlService.DeleteAsync(id, userId, cancellationToken);
         return NoContent();
     }
 
@@ -74,6 +77,10 @@ public class UrlController : ControllerBase
     public async Task<IActionResult> RedirectToLongUrl(String shortUrlCode, CancellationToken cancellationToken)
     {
         var urlLong = await _urlService.GetLongUrlByCode(shortUrlCode, cancellationToken);
+        
+        if (urlLong == null)
+            return NotFound();
+        
         return Redirect(urlLong);
     }
 }
