@@ -70,9 +70,11 @@ public class UserController : ControllerBase
     }
 
     [Authorize]
-    [HttpGet("profile")]
-    public async Task<IActionResult> Profile()
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
     {
-        return Ok("Ovo je zasticena ruta");
+        await HttpContext.SignOutAsync("MyCookieAuth");
+        return Ok(new { message = "Logged out successfully" });
     }
+
 }
