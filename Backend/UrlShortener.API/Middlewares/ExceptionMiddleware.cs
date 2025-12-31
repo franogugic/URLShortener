@@ -1,4 +1,5 @@
 using System.Text.Json;
+using UrlShortener.Application.URLs.Exceptions;
 using UrlShortener.Application.Users.Exceptions;
 
 namespace UrlShortener.API.Middlewares;
@@ -41,6 +42,10 @@ public class ExceptionMiddleware
                 
                 case InvalidCredentialsException:
                     httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    break;
+                
+                case ShortUrlCodeAlreadyExistsException:
+                    httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
                     break;
                 
                 default:
