@@ -6,6 +6,7 @@ public class Url
 {
     public Guid Id { get; private set; }
     public string ShortUrlCode { get; private set; }
+    public string ShortUrl { get; private set; }
     public string LongUrl { get; private set; }
     public string Description { get; private set; }
     public int Clicks { get; private set; }
@@ -29,6 +30,7 @@ public class Url
             Id = Guid.NewGuid(),
             ShortUrlCode = shortUrlCode,
             LongUrl = longUrl,
+            ShortUrl = $"http://localhost:5010/url/{shortUrlCode}",
             Description = description,
             Clicks = 0,
             CreatedAt = DateTime.UtcNow,
