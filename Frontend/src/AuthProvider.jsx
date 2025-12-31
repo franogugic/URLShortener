@@ -38,8 +38,22 @@ export const AuthProvider = ({ children }) => {
         return false;
     };
 
+    const logout = async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/user/logout`, {
+                method: "POST",
+                credentials: "include",
+            });
+            if (res.ok) {
+                setUser(null); // odmah očisti auth state
+            }
+        } catch (err) {
+            console.error("Logout failed:", err);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login }}>
+        <AuthContext.Provider value={{ user, loading, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

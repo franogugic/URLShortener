@@ -16,10 +16,17 @@ public class AppDbContext : DbContext
             .HasIndex(u => u.Username)
             .IsUnique();
 
-        modelBuilder.Entity<Url>()
-            .HasOne(u => u.User)
-            .WithMany(u => u.Urls)
-            .HasForeignKey(u => u.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Url>(entity =>
+        {
+            entity
+                .HasOne(u => u.User)
+                .WithMany(u => u.Urls)
+                .HasForeignKey(u => u.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasIndex(u => u.ShortUrlCode)
+                .IsUnique();
+        });
     }
 }

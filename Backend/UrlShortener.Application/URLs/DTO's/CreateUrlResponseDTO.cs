@@ -8,6 +8,7 @@ public class CreateUrlResponseDTO
     public Guid Id { get; set; }
     public string ShortUrlCode { get; set; }
     public string LongUrl { get; set; }
+    public string ShortUrl  { get; set; } 
     public string Description { get; set; }
     public int Clicks { get; set; }
     public DateTime CreatedAt { get; set; }
