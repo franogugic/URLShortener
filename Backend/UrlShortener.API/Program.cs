@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 using UrlShortener.API.Middlewares;
 using UrlShortener.Application.Interfaces;
 using UrlShortener.Application.Services;
@@ -40,6 +41,15 @@ builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 builder.Services.AddScoped<IUrlService, UrlService>();
 builder.Services.AddScoped<IUrlRepository, UrlRepository>();
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var options = ConfigurationOptions.Parse("localhost:6379");
+    return ConnectionMultiplexer.Connect(options);
+});
+
+
+
+builder.Services.AddSingleton<IUrlCache, RedisUrlCache>();
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 

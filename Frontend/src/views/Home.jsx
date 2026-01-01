@@ -121,14 +121,14 @@ const Home = () => {
                     />
                     <input
                         type="text"
-                        placeholder="Short Code (optional)"
+                        placeholder="Short Code"
                         value={shortCode}
                         onChange={e => setShortCode(e.target.value)}
                         className="border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <input
                         type="text"
-                        placeholder="Description (optional)"
+                        placeholder="Description"
                         value={description}
                         onChange={e => setDescription(e.target.value)}
                         className="border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
