@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StackExchange.Redis;
 using UrlShortener.Application.Interfaces;
 using UrlShortener.Application.URLs.DTO_s;
 using UrlShortener.Application.URLs.Interfaces;
@@ -15,11 +16,13 @@ public class UrlController : ControllerBase
 {
     private readonly IUrlService _urlService;
     private readonly IUserService _userService;
+    private readonly IConnectionMultiplexer _redis;
 
-    public UrlController(IUrlService urlService, IUserService userService)
+    public UrlController(IUrlService urlService, IUserService userService, IConnectionMultiplexer redis)
     {
         _urlService = urlService;
         _userService = userService;
+        _redis = redis;
     }
     
     [Authorize]

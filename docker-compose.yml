@@ -16,6 +16,16 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+        
+  api:
+    build: .
+    depends_on:
+      - redis
+      - mysql
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5000:5000"
 
 volumes:
   mysql-data:

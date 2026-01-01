@@ -60,10 +60,13 @@ public class UserController : ControllerBase
     [HttpGet("me")]
     public IActionResult GetMe()
     {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized();
+        
         var user = new
         {
-            Id = User.FindFirst(ClaimTypes.NameIdentifier).Value,
-            Username = User.FindFirst(ClaimTypes.Name).Value,
+            Id = userId,
+            Username = User.FindFirst(ClaimTypes.Name)?.Value,
         };
         
         return Ok(user);

@@ -14,12 +14,14 @@ public class UrlService : IUrlService
     private readonly ILogger _logger;
     private readonly IUrlRepository _urlRepository;
     private readonly IMapper _mapper;
+    private readonly IUrlCache _urlCache;
 
-    public UrlService(ILogger<UrlService> logger, IUserService userService, IUrlRepository urlRepository, IMapper mapper)
+    public UrlService(ILogger<UrlService> logger, IUserService userService, IUrlRepository urlRepository, IMapper mapper, IUrlCache urlCache)
     {
         _logger = logger;
         _urlRepository = urlRepository;
         _mapper = mapper;
+        _urlCache = urlCache;
     }
     
     
@@ -72,19 +74,33 @@ public class UrlService : IUrlService
             throw new UnauthorizedAccessException("You are not authorized to delete this url");
         
         await _urlRepository.DeleteAsync(url, cancellationToken);
+        
+        await _urlCache.RemoveAsync(url.ShortUrlCode, cancellationToken);
+        
         _logger.LogInformation($"Deleted url: {url}");
         
     }
 
-    public async Task<string?> GetLongUrlByCode(string shortCode, CancellationToken cancellationToken)
+    public async Task<string?> GetLongUrlByCode(string shortUrlCode, CancellationToken cancellationToken)
     {
-        var url = await _urlRepository.GetUrlByShortCode(shortCode, cancellationToken);
-        
+        var cachedUrl = await _urlCache.GetLongUrlAsync(shortUrlCode, cancellationToken);
+        if (cachedUrl != null)
+        {
+            _logger.LogInformation($"Cache hit for {shortUrlCode}");
+            return cachedUrl;
+        }
+
+        var url = await _urlRepository.GetUrlByShortCode(shortUrlCode, cancellationToken);
         if (url == null)
-            throw new UrlNotFoundException();
-        
-        _logger.LogInformation($"Retrieved url: {url}");
-        return url?.LongUrl;
+        {
+            _logger.LogWarning($"URL not found for {shortUrlCode}");
+            return null; 
+        }
+
+        await _urlCache.SetLongUrlAsync(shortUrlCode, url.LongUrl, cancellationToken, TimeSpan.FromHours(3));
+        _logger.LogInformation($"Cache set for {shortUrlCode}");
+
+        return url.LongUrl;
     }
 
 }
