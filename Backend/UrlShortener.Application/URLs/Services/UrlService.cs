@@ -24,7 +24,6 @@ public class UrlService : IUrlService
         _urlCache = urlCache;
     }
     
-    
     public async Task<CreateUrlResponseDTO> CreateAsync(CreateUrlRequestDTO request,User user, CancellationToken cancellationToken)
     {
         var shortUrlCode = request.ShortUrlCode;
@@ -58,7 +57,7 @@ public class UrlService : IUrlService
             throw new UrlNotFoundException();
         
         if(url?.UserId != currentUserId)
-            throw new UnauthorizedAccessException("You are not authorized to get this url");
+            throw new ForbiddenException("You are not authorized to get this url");
         
         _logger.LogInformation("Retrieved url {UrlId}", url.Id);
         return _mapper.Map<CreateUrlResponseDTO>(url);
@@ -71,13 +70,13 @@ public class UrlService : IUrlService
             throw new UrlNotFoundException();
         
         if(url.UserId  != currentUserId)
-            throw new UnauthorizedAccessException("You are not authorized to delete this url");
+            throw new ForbiddenException("You are not authorized to delete this url");
         
         await _urlRepository.DeleteAsync(url, cancellationToken);
         
         await _urlCache.RemoveAsync(url.ShortUrlCode, cancellationToken);
         
-        _logger.LogInformation($"Deleted url: {url}");
+        _logger.LogInformation($"Deleted url: {url}");  
         
     }
 

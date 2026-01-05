@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Http.HttpResults;
 using UrlShortener.Application.URLs.Exceptions;
 using UrlShortener.Application.Users.Exceptions;
 
@@ -46,6 +47,14 @@ public class ExceptionMiddleware
                 
                 case ShortUrlCodeAlreadyExistsException:
                     httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+                    break;
+                
+                case ForbiddenException:
+                    httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    break;
+                
+                case UrlNotFoundException:
+                    httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
                     break;
                 
                 default:
