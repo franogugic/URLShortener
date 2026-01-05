@@ -6,9 +6,9 @@ namespace UrlShortener.Application.URLs.DTO_s;
 public class CreateUrlRequestDTO
 {
     [Required]
-    public string ShortUrlCode { get; set; }
+    public required string ShortUrlCode { get; set; }  = string.Empty;
     [Required]
-    public string LongUrl { get; set; }
+    public required string LongUrl { get; set; } = string.Empty;
     [Required]
-    public string Description { get; set; }
+    public required string Description { get; set; } = string.Empty;
 }

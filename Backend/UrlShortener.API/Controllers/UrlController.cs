@@ -39,8 +39,7 @@ public class UrlController : ControllerBase
         
         var response = await _urlService.CreateAsync(request, user, cancellationToken);
         
-        return Ok(response);
-        
+        return CreatedAtAction(null, response);        
     }
 
     [Authorize]
