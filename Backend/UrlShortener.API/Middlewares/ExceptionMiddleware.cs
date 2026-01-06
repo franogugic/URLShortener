@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Http.HttpResults;
 using UrlShortener.Application.URLs.Exceptions;
 using UrlShortener.Application.Users.Exceptions;
 
@@ -21,10 +20,23 @@ public class ExceptionMiddleware
         try
         {
             await _next(httpContext);
+
+            // samo izadi iz middlewarea  ako je 429 i tjt dosl.
+            if (httpContext.Response.StatusCode == StatusCodes.Status429TooManyRequests)
+            {
+                return;
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occured");
+
+            // ako je dio pdoataka poslan header ne smimo dirat
+            if (httpContext.Response.HasStarted)
+            {
+                return;
+            }
+
             httpContext.Response.ContentType = "application/json";
 
             switch (ex)
@@ -67,7 +79,6 @@ public class ExceptionMiddleware
                 message = ex.Message,
             };
             
-            //pretvara u json
             await httpContext.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
     }

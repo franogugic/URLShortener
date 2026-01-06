@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StackExchange.Redis;
 using UrlShortener.Application.Interfaces;
 using UrlShortener.Application.URLs.DTO_s;
@@ -26,6 +27,7 @@ public class UrlController : ControllerBase
     }
     
     [Authorize]
+    [EnableRateLimiting("url-limit")]
     [HttpPost("create")]
     public async Task<IActionResult> CreateAsync([FromBody] CreateUrlRequestDTO request, CancellationToken cancellationToken)
     {
