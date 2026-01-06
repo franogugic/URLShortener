@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using UrlShortener.API.Middlewares;
@@ -61,7 +63,9 @@ builder.Services.AddCors(options =>
             policy.WithOrigins("http://localhost:5173")  
                 .AllowCredentials()
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                //koristimo radi Rate Limitera
+                .WithExposedHeaders("Retry-After");
         });
 });
 
@@ -71,6 +75,65 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 
 builder.Services.AddAutoMapper(typeof(UserProfile).Assembly, typeof(UrlProfile).Assembly);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Koristimo Sliding Window i ip particioniranje
+    //npr bez particioniranja bi imali 10 req  a vako imamo 10 po ipu
+    options.AddPolicy("auth-limit", httpContext =>
+    {
+        // Koristimo Sliding Window + IP Particioniranje
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() 
+                       ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault() 
+                       ?? "anonymous";
+        
+        return RateLimitPartition.GetSlidingWindowLimiter(clientIp, _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromSeconds(30),
+            SegmentsPerWindow = 3,
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+
+    options.AddPolicy("url-limit", httpContext =>
+    {
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 15,          // Max 15 linkova po minuti po IP-u
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
+    
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        // Svi zahtjevi na cijeloj aplikaciji dijele ovaj limit
+        return RateLimitPartition.GetFixedWindowLimiter("global-safety", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5000, // Maksimalno 5000 zahtjeva u minuti za CIJELI server
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
+    
+    //  Custom res body odgovora za 429
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = 429;
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            error = "Too many requests",
+            message = "tmc tbh",
+            retryAfter = "30s"
+        }, cancellationToken: token);
+    };
+});
 
 var app = builder.Build();
 
@@ -83,6 +146,8 @@ app.UseCors(MyAllowSpecificOrigins);
 
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseRouting();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

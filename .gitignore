@@ -15,3 +15,8 @@ frontend/.env
 .idea/
 .DS_Store
 Thumbs.db
+
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo

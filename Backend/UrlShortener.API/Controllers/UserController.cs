@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using UrlShortener.Application.DTO_s;
 using UrlShortener.Application.Interfaces;
 
@@ -20,6 +21,7 @@ public class UserController : ControllerBase
     }
     
     [HttpPost("register")]
+    [EnableRateLimiting("auth-limit")]
     public async Task<IActionResult> RegisterUser([FromBody] RegisterUserRequestDTO request, CancellationToken cancellationToken)
     {
             var response = await _userService.RegisterUser(request, cancellationToken);
@@ -27,6 +29,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth-limit")]
     public async Task<IActionResult> Login([FromBody] LoginUserRequestDTO request, CancellationToken cancellationToken)
     {
         var user = await _userService.LoginUser(request, cancellationToken);
