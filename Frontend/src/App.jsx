@@ -4,12 +4,14 @@ import { AuthProvider } from "./AuthProvider";
 import ProtectedRoute from "./ProtectedRoute";
 import Login from "./views/Login.jsx";
 import Home from "./views/Home.jsx";
+import Register from "./views/Register.jsx";
 
 function App() {
     return (
         <AuthProvider>
                 <Routes>
                     <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
 
                     <Route
                         path="/home"

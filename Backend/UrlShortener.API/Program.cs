@@ -45,7 +45,7 @@ builder.Services.AddScoped<IUrlRepository, UrlRepository>();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
-    var options = ConfigurationOptions.Parse("localhost:6379");
+    var options = ConfigurationOptions.Parse("urlshortener-redis:6379,abortConnect=false");
     return ConnectionMultiplexer.Connect(options);
 });
 
@@ -60,7 +60,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173")  
+            policy.WithOrigins("http://116.203.122.236") // Dozvoli svom frontendu pristup
                 .AllowCredentials()
                 .AllowAnyHeader()
                 .AllowAnyMethod()
@@ -155,6 +155,21 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.UseHttpsRedirection();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        context.Database.Migrate(); // Ovo automatski kreira tablice u MySQL-u
+        Console.WriteLine("Database migration successful!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred while migrating the database: {ex.Message}");
+    }
+}
 
 app.Run();
 
