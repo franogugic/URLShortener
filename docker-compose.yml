@@ -5,27 +5,40 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: urlshortener
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-    ports:
-      - "3306:3306"
+      MYSQL_USER: admin_user
+      MYSQL_PASSWORD: MojaJakaLozinka123!
     volumes:
       - mysql-data:/var/lib/mysql
 
   redis:
     image: redis:alpine
-    ports:
-      - "6379:6379"
-        
+    restart: always
+
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile 
+    restart: always
     depends_on:
       - redis
       - mysql
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
+      - BASE_DOMAIN=http://116.203.122.236
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=urlshortener;user=admin_user;password=MojaJakaLozinka123!
+      - Redis__ConnectionString=redis:6379
     ports:
-      - "5000:5000"
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
 
 volumes:
   mysql-data:

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-const API_URL = "http://localhost:5010";
+const API_URL = import.meta.env.VITE_API_URL
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -52,8 +53,18 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const register = async (username, password) => {
+        const res = await fetch(`${API_URL}/api/user/register`, {
+            method: "POST",
+            credentials: "include", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
+        return res.ok; 
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, register }}>
             {children}
         </AuthContext.Provider>
     );

@@ -14,7 +14,7 @@ const Home = () => {
     const [description, setDescription] = useState('');
     const [creating, setCreating] = useState(false);
 
-    const backendBaseUrl = 'http://localhost:5010';
+    const backendBaseUrl = import.meta.env.VITE_API_URL
 
     const fetchUrls = async () => {
         setLoading(true);

@@ -1,154 +1,46 @@
-# URL Shortener Service
+# URL Shortener - Full Stack Production Project
 
-## Opis projekta
-URL Shortener je servis koji omogućuje korisnicima da skrate dugačke URL-ove, prate njihovu upotrebu i imaju pregled svojih skraćenih linkova. Projekt je implementiran u ASP.NET Core, koristi MySQL za pohranu podataka, Redis za caching i Nginx kao reverse proxy.
+### 🔗 [LIVE DEMO](http://116.203.122.236)
+**Status**: Deployed on an Ubuntu VPS (Hetzner) using Docker containerization.
 
-Projekt je građen prema **Clean / Onion Architecture** principima, s jasnom separacijom slojeva i testabilnom logikom.
+## Overview
+A full\-stack URL shortening service with authentication, caching and rate limiting. The frontend is a React (Vite) SPA served by Nginx, and the backend is a .NET API (C#) backed by MySQL and Redis. The system is containerized and orchestrated with Docker Compose for development and production.
 
----
+## Tech Stack
+- Frontend: React (Vite) + Nginx (JavaScript, npm)
+- Backend: .NET API (C\#) using ASP\.NET Core Identity and EF Core
+- Database: MySQL 8\.0
+- Cache: Redis
+- Orchestration: Docker, Docker Compose
 
-## Tehnologije
-- Backend: **ASP.NET Core Web API**
-- Baza podataka: **MySQL**
-- Caching: **Redis / IMemoryCache**
-- Web server / reverse proxy: **Nginx**
-- Auth: **Cookie-based**
-- Docker: za lokalni razvoj i deployment
+## Key Features
+1. Authentication and security
+    - ASP\.NET Core Identity for user management
+    - Cookie\-based authentication with Data Protection keys persisted in a Docker volume
+    - BCrypt password hashing
+    - Rate limiting middleware to protect against brute\-force attacks
 
----
+2. Performance and caching
+    - Redis cache\-aside for O(1) redirect lookups and reduced MySQL I/O
+    - Entity Framework Core with code\-first migrations applied at API startup
 
-## Arhitektura
+3. Infrastructure
+    - Docker networking for internal service discovery via service names
+    - Nginx reverse proxy configured with `try_files` to support React SPA routes
+    - Docker volumes for persistent MySQL data and Data Protection keys
 
-### Slojevi (Onion / Clean)
-1. **Domain Layer**
-    - Entiteti: `User`, `Url`
-    - Business rules: generiranje short code, validacija URL-a, provjera custom code-a
+## Deployment Workflow
+Manual pipeline used to deploy to Ubuntu VPS:
+1. Sync source code with `rsync`.
+2. Build multi\-stage Docker images (separate build and runtime layers).
+3. Start services with `docker-compose`.
 
-2. **Application Layer**
-    - Use cases / Services:
-        - `CreateShortUrlService`
-        - `GetUserUrlsService`
-        - `UpdateUrlService`
-        - `DeleteUrlService`
-        - `LoginUserService`
-        - `RegisterUserService`
-    - DTOs za input i output
+## Local Development
 
-3. **Infrastructure Layer**
-    - Database: MySQL + Entity Framework Core
-    - Cache: Redis / IMemoryCache
-    - Session / Cookie auth
+Prerequisites:
+- Docker & Docker Compose installed
+- Node.js & npm (for frontend development)
 
-4. **Presentation Layer**
-    - REST API: Controllers za Auth, URL management i Redirect
-    - Redirect endpoint koristi cache i click tracking
-
----
-
-## DB struktura
-
-### Users
-| Polje         | Tip          | Napomena               |
-|---------------|--------------|----------------------|
-| id            | BIGINT PK    | auto increment        |
-| username      | VARCHAR      | UNIQUE                |
-| password_hash | VARCHAR      |                      |
-| created_at    | TIMESTAMP    |                      |
-
-### Urls
-| Polje           | Tip          | Napomena               |
-|-----------------|--------------|----------------------|
-| id              | BIGINT PK    | auto increment        |
-| short_code      | VARCHAR(50)  | UNIQUE                |
-| long_url        | TEXT         |                      |
-| description     | VARCHAR(255) | opcionalno            |
-| user_id         | BIGINT FK    | references users.id   |
-| created_at      | TIMESTAMP    |                      |
-| clicks          | INT          | default 0             |
-
----
-
-## Use caseovi
-
-1. **Register**
-    - Kreiranje novog korisnika
-    - Endpoint: `POST /auth/register`
-
-2. **Login**
-    - Login korisnika, postavljanje session cookie-a
-    - Endpoint: `POST /auth/login`
-
-3. **Create short URL**
-    - Unos long URL-a i opcionalno custom code / description
-    - Endpoint: `POST /shorten`
-
-4. **Get user URLs**
-    - Dohvat svih skraćenih URL-ova korisnika
-    - Endpoint: `GET /urls`
-
-5. **Edit / Delete URL**
-    - Promjena opisa ili custom code-a, brisanje URL-a
-    - Endpoint: `PUT /urls/{id}`, `DELETE /urls/{id}`
-
-6. **Click tracking**
-    - Svaki redirect se broji u `clicks`
-    - Integrirano u `GET /{shortCode}` endpoint
-
----
-
-## Cross-cutting feature-i
-
-- **Rate limiting / brute force protection**
-    - Implementirano na middleware-u i Nginx-u
-    - Štiti login, create URL i redirect endpoint
-- **Caching**
-    - Redis ili IMemoryCache za `shortCode → longUrl` mapping
-    - HTTP cache headers opcionalno za browser / CDN
-- **Security**
-    - HttpOnly, Secure cookies
-    - CSRF zaštita za POST requeste
-    - HTTPS terminacija preko Nginx
-- **Deployment**
-    - Docker Compose: API + MySQL + Redis + Nginx
-
----
-
-## Redirect flow
-
-1. Korisnik klikne short URL: `/abc123`
-2. Nginx provjeri cache (HTTP / Redis)
-3. Ako miss → backend query MySQL
-4. Click tracking (increment `clicks`)
-5. HTTP redirect (301/302) na `longUrl`
-
----
-
-## Opcionalne nadogradnje
-
-- Analytics dashboard (top links, clicks over time)
-- Expiry date / deactivation
-- Custom short code validation / hints
-- Rate limiting per user / per IP
-- Logging & monitoring (Serilog / NLog / Grafana)
-
----
-
-## Kako pokrenuti (lokalno)
-
-1. Clone repozitorij
-2. Pokreni Docker Compose (`docker-compose up`)
-    - Servisi: API, MySQL, Redis, Nginx
-3. Open API na `http://localhost:5000`
-4. Testirati endpointove (Postman / Swagger)
-
----
-
-## Zaključak
-
-Projekt demonstrira:
-- REST API s autentikacijom i user history
-- URL shortening s custom code i caching
-- Click tracking i rate limiting
-- Clean / Onion arhitekturu za testabilnost i skalabilnost
-- Integraciju Redis-a i Nginx-a za performanse i sigurnost  
-
+Start the full stack locally:
+```bash
+docker-compose up -d --build

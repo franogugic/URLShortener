@@ -1,3 +1,6 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UrlShortener.Application.Users.Exceptions;
 
 namespace UrlShortener.Domain.Entities;
@@ -9,8 +12,7 @@ public class User
     public string PasswordHash { get; private set; }
     public DateTime DateCreated { get; private set; }
     
-    public ICollection<Url>  Urls { get; private set; } = new List<Url>();
-    
+    public virtual ICollection<Url> Urls { get; set; } = new List<Url>();    
     
     private User() {}
 

@@ -12,21 +12,24 @@ public class AppDbContext : DbContext
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>()
-            .HasIndex(u => u.Username)
-            .IsUnique();
+        // Konfiguracija za User entitet
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Username)
+                .IsUnique();
+        });
 
+        // Konfiguracija za Url entitet
         modelBuilder.Entity<Url>(entity =>
         {
-            entity
-                .HasOne(u => u.User)
-                .WithMany(u => u.Urls)
+            entity.HasIndex(u => u.ShortUrlCode)
+                .IsUnique();
+
+            // Definiranje relacije 1:N (Jedan korisnik ima više URL-ova)
+            entity.HasOne(u => u.User)
+                .WithMany(u => u.Urls) // Ovo zahtijeva ICollection<Url> u User klasi
                 .HasForeignKey(u => u.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            entity
-                .HasIndex(u => u.ShortUrlCode)
-                .IsUnique();
         });
     }
 }
