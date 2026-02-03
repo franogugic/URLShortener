@@ -1,27 +1,36 @@
 services:
   mysql:
-    image: mysql:8
+    image: mysql:8.0 # Fiksna verzija 8.0 je stabilnija za ovaj setup
+    container_name: mysql_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: urlshortener
       MYSQL_USER: admin_user
       MYSQL_PASSWORD: MojaJakaLozinka123!
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-proot"]
+      timeout: 5s
+      retries: 10
     volumes:
       - mysql-data:/var/lib/mysql
 
   redis:
     image: redis:alpine
+    container_name: redis_cache
     restart: always
 
   api:
     build:
       context: .
-      dockerfile: Dockerfile 
+      dockerfile: Dockerfile
     restart: always
     depends_on:
-      - redis
-      - mysql
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - BASE_DOMAIN=http://116.203.122.236
