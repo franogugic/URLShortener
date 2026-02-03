@@ -1,8 +1,7 @@
 # URL Shortener - Full Stack Production Project
 
 ### 🔗 [LIVE DEMO](http://116.203.122.236)
-**Status**: Deployed on an Ubuntu VPS (Hetzner) using Docker containerization.
-
+**Status**: The live demo is currently unavailable due to the expiration of the hosting plan on Hetzner VPS. However, the codebase is fully functional and can be run locally by following the installation steps below.
 ## Overview
 A full\-stack URL shortening service with authentication, caching and rate limiting. The frontend is a React (Vite) SPA served by Nginx, and the backend is a .NET API (C#) backed by MySQL and Redis. The system is containerized and orchestrated with Docker Compose for development and production.
 

@@ -1,5 +1,4 @@
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using UrlShortener.API.Middlewares;
@@ -13,19 +12,25 @@ using UrlShortener.Infrastructure.Db;
 using UrlShortener.Infrastructure.Repositories;
 using UrlShortener.Infrastructure.Security;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
+// --- OpenAPI / Swagger ---
 builder.Services.AddOpenApi();
 
+// --- Database ---
+// --- Database ---
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 33))
+        new MySqlServerVersion(new Version(8, 0, 33)),
+        mysqlOptions => mysqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 10,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorNumbersToAdd: null)
     )
 );
 
-//kreiranje session cookiesa, middleware
+// --- Authentication (cookie) ---
 builder.Services.AddAuthentication("MyCookieAuth")
     .AddCookie("MyCookieAuth", options =>
     {
@@ -34,8 +39,21 @@ builder.Services.AddAuthentication("MyCookieAuth")
         options.LogoutPath = "/api/user/logout";
         options.ExpireTimeSpan = TimeSpan.FromHours(3);
         options.SlidingExpiration = true;
+
+        // SPAs: return 401 instead of redirect
+        options.Events.OnRedirectToLogin = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
     });
 
+// --- DI for services ---
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
@@ -45,50 +63,41 @@ builder.Services.AddScoped<IUrlRepository, UrlRepository>();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
-    var options = ConfigurationOptions.Parse("urlshortener-redis:6379,abortConnect=false");
+    var options = ConfigurationOptions.Parse("redis:6379,abortConnect=false");
     return ConnectionMultiplexer.Connect(options);
 });
 
-
-
 builder.Services.AddSingleton<IUrlCache, RedisUrlCache>();
 
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-        policy =>
-        {
-            policy.WithOrigins("http://116.203.122.236") // Dozvoli svom frontendu pristup
-                .AllowCredentials()
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                //koristimo radi Rate Limitera
-                .WithExposedHeaders("Retry-After");
-        });
-});
-
-
 builder.Services.AddHttpContextAccessor();
-
 builder.Services.AddControllers();
-
 builder.Services.AddAutoMapper(typeof(UserProfile).Assembly, typeof(UrlProfile).Assembly);
 
+// --- CORS ---
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") // frontend dev
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials()
+              .WithExposedHeaders("Retry-After");
+    });
+});
+
+// --- Rate Limiting ---
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    // Koristimo Sliding Window i ip particioniranje
-    //npr bez particioniranja bi imali 10 req  a vako imamo 10 po ipu
     options.AddPolicy("auth-limit", httpContext =>
     {
-        // Koristimo Sliding Window + IP Particioniranje
-        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() 
-                       ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault() 
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString()
+                       ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
                        ?? "anonymous";
-        
+
         return RateLimitPartition.GetSlidingWindowLimiter(clientIp, _ => new SlidingWindowRateLimiterOptions
         {
             PermitLimit = 10,
@@ -105,31 +114,27 @@ builder.Services.AddRateLimiter(options =>
 
         return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 15,          // Max 15 linkova po minuti po IP-u
+            PermitLimit = 15,
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0
         });
     });
-    
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-    {
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext => { 
         // Svi zahtjevi na cijeloj aplikaciji dijele ovaj limit
-        return RateLimitPartition.GetFixedWindowLimiter("global-safety", _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 5000, // Maksimalno 5000 zahtjeva u minuti za CIJELI server
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0
-        });
-    });
-    
-    //  Custom res body odgovora za 429
+        return RateLimitPartition.GetFixedWindowLimiter("global-safety",
+            _ => new FixedWindowRateLimiterOptions { 
+                PermitLimit = 5000, 
+                    //Maksimalno 5000 zahtjeva u minuti za CIJELI server
+                Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }); });
+
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = 429;
         await context.HttpContext.Response.WriteAsJsonAsync(new
         {
             error = "Too many requests",
-            message = "tmc tbh",
+            message = "Rate limit exceeded",
             retryAfter = "30s"
         }, cancellationToken: token);
     };
@@ -137,24 +142,26 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+// --- Middleware order ---
+app.UseRouting();
 
 app.UseCors(MyAllowSpecificOrigins);
 
-app.UseMiddleware<ExceptionMiddleware>();
-app.UseRouting();
 
+app.UseMiddleware<ExceptionMiddleware>();
 app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-
 app.MapControllers();
-app.UseHttpsRedirection();
+
+//app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -162,7 +169,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        context.Database.Migrate(); // Ovo automatski kreira tablice u MySQL-u
+        context.Database.Migrate();
         Console.WriteLine("Database migration successful!");
     }
     catch (Exception ex)
@@ -174,6 +181,3 @@ using (var scope = app.Services.CreateScope())
 app.Run();
 
 public partial class Program { }
-
-
-
