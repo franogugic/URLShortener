@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
+using UrlShortener.API.Data;
 using UrlShortener.API.Middlewares;
 using UrlShortener.Application.Interfaces;
 using UrlShortener.Application.Services;
@@ -169,7 +170,9 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
+        var passwordHasher = services.GetRequiredService<IPasswordHasher>();
         context.Database.Migrate();
+        await AppSeeder.SeedAsync(context, passwordHasher);
         Console.WriteLine("Database migration successful!");
     }
     catch (Exception ex)
