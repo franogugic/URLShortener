@@ -143,6 +143,13 @@ export function DashboardPage() {
     }
   };
 
+  const handleRedirectClick = (id) => {
+    setUrls((prev) => prev.map((url) => (url.id === id ? { ...url, clicks: url.clicks + 1 } : url)));
+    if (selectedDetails?.id === id) {
+      setSelectedDetails((prev) => (prev ? { ...prev, clicks: prev.clicks + 1 } : prev));
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -272,6 +279,7 @@ export function DashboardPage() {
                         href={shortened}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => handleRedirectClick(url.id)}
                         className="text-lg font-semibold text-blue-500 hover:text-blue-400 block mb-2"
                       >
                         {shortened}

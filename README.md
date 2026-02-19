@@ -2,6 +2,19 @@
 
 ### 🔗 [LIVE DEMO](http://116.203.122.236)
 **Status**: The live demo is currently unavailable due to the expiration of the hosting plan on Hetzner VPS. However, the codebase is fully functional and can be run locally by following the installation steps below.
+
+### Demo Account
+A preconfigured demo user is available for testing application features:
+
+| Field | Value |
+|------|------|
+| Username | `demo` |
+| Password | `demo123` |
+
+>⚠️ This account is intended for demonstration purposes only.
+
+---
+
 ## Overview
 A full\-stack URL shortening service with authentication, caching and rate limiting. The frontend is a React (Vite) SPA served by Nginx, and the backend is a .NET API (C#) backed by MySQL and Redis. The system is containerized and orchestrated with Docker Compose for development and production.
 
@@ -43,3 +56,6 @@ Prerequisites:
 Start the full stack locally:
 ```bash
 docker-compose up -d --build
+
+
+

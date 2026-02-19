@@ -51,4 +51,13 @@ public class UrlRepository : IUrlRepository
         return await _context.Urls.FirstOrDefaultAsync(u => u.ShortUrlCode == shortUrlCode, cancellationToken);
         //return await _context.Urls.Include(u => u.User).AnyAsync(u => u.ShortUrl == shortUrl, cancellationToken);
     }
+
+    public async Task UpdateAsync(Url url, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        _context.Urls.Update(url);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

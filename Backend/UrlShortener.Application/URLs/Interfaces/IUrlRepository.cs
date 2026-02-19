@@ -15,5 +15,6 @@ public interface IUrlRepository
 
     Task<Url?> GetUrlByShortCode(string shortUrl, CancellationToken cancellationToken);
 
+    Task UpdateAsync(Url url, CancellationToken cancellationToken);
 
 }

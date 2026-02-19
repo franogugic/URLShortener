@@ -83,17 +83,21 @@ public class UrlService : IUrlService
     public async Task<string?> GetLongUrlByCode(string shortUrlCode, CancellationToken cancellationToken)
     {
         var cachedUrl = await _urlCache.GetLongUrlAsync(shortUrlCode, cancellationToken);
-        if (cachedUrl != null)
-        {
-            _logger.LogInformation($"Cache hit for {shortUrlCode}");
-            return cachedUrl;
-        }
-
         var url = await _urlRepository.GetUrlByShortCode(shortUrlCode, cancellationToken);
         if (url == null)
         {
             _logger.LogWarning($"URL not found for {shortUrlCode}");
             return null; 
+        }
+
+        // Track redirect usage on every valid redirect.
+        url.IncrementClicks();
+        await _urlRepository.UpdateAsync(url, cancellationToken);
+
+        if (cachedUrl != null)
+        {
+            _logger.LogInformation($"Cache hit for {shortUrlCode}");
+            return cachedUrl;
         }
 
         await _urlCache.SetLongUrlAsync(shortUrlCode, url.LongUrl, cancellationToken, TimeSpan.FromHours(3));

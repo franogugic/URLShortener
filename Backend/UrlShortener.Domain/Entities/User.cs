@@ -32,4 +32,12 @@ public class User
             DateCreated = DateTime.UtcNow
         };
     }
+
+    public void UpdatePasswordHash(string passwordHash)
+    {
+        if (string.IsNullOrWhiteSpace(passwordHash))
+            throw new InvalidUserCreateException("Password hash cannot be null or empty");
+
+        PasswordHash = passwordHash;
+    }
 }
